@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HavocProtocol.io</title> 
+<style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: #0d0d1a;
+      overflow: hidden;
+      font-family: 'Segoe UI', 'Arial', sans-serif;
+    }
+    canvas { 
+      display: block; 
+      cursor: crosshair;
+    }
+    
+    /* --- Styles du Menu --- */
+    #startScreen {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      text-align: center;
+      background: rgba(0, 0, 20, 0.7);
+      padding: 40px;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+      width: 90%;
+      max-width: 600px;
+      box-sizing: border-box;
+      z-index: 10;
+    }
+    #startScreen h1 {
+      font-size: 3.5em;
+      margin: 0 0 20px 0;
+      text-shadow: 0 0 10px #00FFFF;
+    }
+    #pseudoInput {
+      padding: 10px;
+      font-size: 1.2em;
+      border: 2px solid #00FFFF;
+      background: #0d0d1a;
+      color: white;
+      border-radius: 5px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    #characterSelection {
+      margin-bottom: 30px;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+    .characterBox {
+      width: 90px;
+      height: 90px;
+      border: 3px solid transparent;
+      cursor: pointer;
+      border-radius: 10px;
+      transition: transform 0.2s, border-color 0.2s;
+      background-size: contain;
+      background-position: center;
+      background-repeat: no-repeat;
+      image-rendering: pixelated;
+    }
+    .characterBox:hover, .characterBox.selected {
+      transform: scale(1.1);
+      border-color: #00FFFF;
+      box-shadow: 0 0 15px #00FFFF;
+    }
+    #playButton {
+      padding: 15px 40px;
+      font-size: 1.5em;
+      background: #00FFFF;
+      color: black;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    #playButton:hover {
+      background: white;
+    }
+    #controls {
+      margin-top: 30px;
+      color: #aaa;
+    }
+
+    /* --- Styles Info & Discord --- */
+    .menu-ui {
+        position: absolute;
+        z-index: 20;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+    .menu-ui:hover {
+        transform: scale(1.1);
+    }
+
+    /* Bouton Info */
+    #infoBtn {
+        top: 20px;
+        right: 20px;
+        width: 50px;
+        height: 50px;
+        background: rgba(0, 255, 255, 0.1);
+        border: 2px solid #00FFFF;
+        border-radius: 50%;
+        color: #00FFFF;
+        font-size: 24px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 10px #00FFFF;
+        text-decoration: none;
+    }
+
+    /* Bouton Discord */
+    #discordLink {
+        bottom: 20px;
+        right: 20px; /* En bas à droite, ou 'left: 50%; transform: translate(-50%)' pour centrer */
+        display: block;
+        width: 60px;
+        height: 60px;
+        background: #5865F2; /* Couleur Discord */
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 15px rgba(88, 101, 242, 0.6);
+    }
+    #discordLink svg {
+        width: 35px;
+        height: 35px;
+        fill: white;
+    }
+
+    /* --- Modal Info --- */
+    #infoModal {
+        display: none; /* Caché par défaut */
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.85);
+        z-index: 100;
+        backdrop-filter: blur(5px);
+    }
+    #modalContent {
+        position: absolute;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        background: #0d0d1a;
+        border: 2px solid #00FFFF;
+        padding: 30px;
+        width: 80%;
+        max-width: 600px;
+        border-radius: 10px;
+        color: white;
+        text-align: center;
+        box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+    }
+    #modalContent h2 {
+        color: #00FFFF;
+        margin-top: 0;
+    }
+    #modalContent p {
+        line-height: 1.6;
+        color: #ddd;
+        font-size: 1.1em;
+    }
+    #closeModal {
+        margin-top: 20px;
+        padding: 10px 30px;
+        background: transparent;
+        border: 2px solid #FF4136;
+        color: #FF4136;
+        font-size: 1em;
+        cursor: pointer;
+        border-radius: 5px;
+        transition: 0.3s;
+    }
+    #closeModal:hover {
+        background: #FF4136;
+        color: white;
+    }
+
+    /* --- Game Over --- */
+    #gameOver {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      text-align: center;
+      display: none;
+      z-index: 10;
+    }
+    #gameOver h1 { font-size: 4em; text-shadow: 0 0 10px red; }
+    #gameOver span { font-size: 1.2em; color: #ccc; margin-top: 20px; display: block; }
+  </style>
+</head>
+<body>
+
+  <div id="infoBtn" class="menu-ui">i</div>
+
+  <a id="discordLink" class="menu-ui" href="https://discord.gg/PN7QEu6Q7a" target="_blank">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 127.14 96.36">
+      <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.11,77.11,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.89,105.89,0,0,0,126.6,80.22c1.24-23.28-3.28-47.23-18.9-72.15ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z"/>
+    </svg>
+  </a>
+
+  <div id="infoModal">
+      <div id="modalContent">
+          <h2>Info HavocProtocol</h2>
+          <p>
+            Bonjour, dans quelques jours, la mise à jour de HavocProtocol arrivera, une mise à jour qui va régler plusieurs bugs et améliorer le jeu : <strong>HavocProtocol 2.0</strong>.
+          </p>
+          <p>
+            Une version téléchargeable sera disponible, des nouvelles mécaniques de jeu ajoutées, et lorsque vous souhaiterez jouer aux anciennes versions, nous mettrons à disposition une petite bibliothèque avec toutes les versions téléchargeables du jeu.
+          </p>
+          <p>
+            Bien plus de nouveautés vous attendent, donc restez à l'affût !
+          </p>
+          <button id="closeModal">Fermer</button>
+      </div>
+  </div>
+
+  <div id="startScreen">
+    <h1>HavocProtocol.io</h1> 
+    <input type="text" id="pseudoInput" placeholder="Entrez votre pseudo" maxlength="15">
+    <h2>Choisissez votre personnage :</h2>
+    <div id="characterSelection"></div>
+    <button id="playButton">JOUER</button>
+    <div id="controls">
+      <p><strong>ZQSD/WASD</strong>: Bouger | <strong>Clic Gauche</strong>: Tirer</p>
+    </div>
+  </div>
+  
+  <div id="gameOver">
+    <h1>GAME OVER</h1>
+    <p>Score final : <span id="finalScore">0</span></p>
+    <span>Appuyez sur 'Entrée' pour recommencer</span>
+  </div>
+
+  <canvas id="game"></canvas>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let gameState = 'START_SCREEN'; 
+    
+    const startScreen = document.getElementById('startScreen');
+    const gameOverScreen = document.getElementById('gameOver');
+    const finalScoreEl = document.getElementById('finalScore');
+    const pseudoInput = document.getElementById('pseudoInput');
+    const characterSelection = document.getElementById('characterSelection');
+    const playButton = document.getElementById('playButton');
+    
+    // Nouveaux éléments UI
+    const infoBtn = document.getElementById('infoBtn');
+    const discordLink = document.getElementById('discordLink');
+    const infoModal = document.getElementById('infoModal');
+    const closeModal = document.getElementById('closeModal');
+
+    // --- Logique de la Modal Info ---
+    infoBtn.onclick = () => {
+        infoModal.style.display = 'block';
+    };
+    closeModal.onclick = () => {
+        infoModal.style.display = 'none';
+    };
+    // Fermer si on clique en dehors du contenu
+    window.onclick = (event) => {
+        if (event.target == infoModal) {
+            infoModal.style.display = 'none';
+        }
+    };
+
+    let score = 0;
+    let player, bots, bullets, botBullets, particles, healthPacks;
+
+    const wave = {
+        number: 0,
+        timer: 20 * 60,
+        countdown: 0,
+        announcement: '',
+        announcementLife: 0
+    };
+
+    // --- Préchargement des images ---
+    const playerImages = [];
+    const playerColors = ['#00FFFF', '#FFA500', '#FF00FF', '#00FF00', '#ADD8E6'];
+    let selectedPlayerImageIndex = 0;
+
+    for (let i = 1; i <= 5; i++) {
+        const img = new Image();
+        img.src = `player${i}.jpg`; 
+        playerImages.push(img);
+    }
+    
+    let assetsLoaded = 0;
+    const totalAssets = playerImages.length; 
+
+    function assetLoaded(isError = false) {
+        assetsLoaded++;
+        if (isError) {
+            console.warn("Une image n'a pas pu être chargée, mais le jeu démarre quand même.");
+        }
+        if (assetsLoaded === totalAssets) {
+            console.log("Toutes les ressources sont traitées. Lancement du jeu !");
+            setupStartScreen();
+        }
+    }
+
+    playerImages.forEach(img => {
+        img.onload = () => assetLoaded(false);
+        img.onerror = () => {
+            console.error(`ERREUR CRITIQUE: Impossible de charger l'image : ${img.src}.`);
+            assetLoaded(true); 
+        };
+    });
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(type) {
+        if (!audioCtx) return;
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        g.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        if (type === 'shoot') { o.type = 'triangle'; o.frequency.setValueAtTime(440, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1); }
+        else if (type === 'hit') { o.type = 'sawtooth'; o.frequency.setValueAtTime(220, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2); }
+        else if (type === 'explosion') { o.type = 'square'; o.frequency.setValueAtTime(110, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4); }
+        else if (type === 'playerHit') { o.type = 'sine'; o.frequency.setValueAtTime(150, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3); }
+        else if (type === 'powerup') { o.type = 'sine'; o.frequency.setValueAtTime(523, audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(1046, audioCtx.currentTime + 0.1); g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2); }
+        o.connect(g); g.connect(audioCtx.destination); o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime + 0.5);
+    }
+    
+    function setupStartScreen() {
+        playerImages.forEach((img, index) => {
+            const box = document.createElement('div');
+            box.className = 'characterBox';
+            if (img.complete && img.naturalWidth !== 0) {
+              box.style.backgroundImage = `url(${img.src})`;
+            } else {
+              box.style.backgroundColor = playerColors[index];
+            }
+            if (index === selectedPlayerImageIndex) box.classList.add('selected');
+            box.onclick = () => {
+                document.querySelector('.characterBox.selected').classList.remove('selected');
+                box.classList.add('selected');
+                selectedPlayerImageIndex = index;
+            };
+            characterSelection.appendChild(box);
+        });
+
+        playButton.onclick = () => {
+            initGame();
+            gameState = 'WAVE_TRANSITION';
+            startScreen.style.display = 'none';
+            // Masquer les boutons UI (Info & Discord) pendant le jeu
+            infoBtn.style.display = 'none';
+            discordLink.style.display = 'none';
+            
+            canvas.style.display = 'block';
+            loop();
+        };
+
+        startScreen.style.display = 'block';
+        // Afficher les boutons UI au démarrage
+        infoBtn.style.display = 'flex';
+        discordLink.style.display = 'flex';
+        
+        canvas.style.display = 'none';
+        gameOverScreen.style.display = 'none';
+    }
+
+
+    function initGame() {
+        score = 0;
+        wave.number = 0;
+        wave.timer = 3 * 60;
+        
+        player = {
+            x: 0, y: 0, speed: 4, size: 25, hp: 100, maxHp: 100, shootCooldown: 0, damageTaken: 0,
+            name: pseudoInput.value || "Player",
+            image: playerImages[selectedPlayerImageIndex],
+            color: playerColors[selectedPlayerImageIndex]
+        };
+        bots = []; bullets = []; botBullets = []; particles = []; healthPacks = [];
+    }
+
+    function startNextWave() {
+        wave.number++;
+        const botsToSpawn = 5 + Math.floor(wave.number * 1.5);
+        for (let i = 0; i < botsToSpawn; i++) {
+            spawnBot();
+        }
+        gameState = 'PLAYING';
+        wave.announcement = `VAGUE ${wave.number} !`;
+        wave.announcementLife = 120;
+    }
+
+    function spawnBot() {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = canvas.width / 2 + Math.random() * 300;
+        const botHp = 30 + (wave.number - 1) * 5;
+        const botSpeed = 1.5 + (wave.number - 1) * 0.1;
+        bots.push({
+            x: player.x + Math.cos(angle) * dist, y: player.y + Math.sin(angle) * dist,
+            size: 20, color: '#FF4136', hp: botHp, maxHp: botHp, speed: Math.min(botSpeed, 3.5),
+            cooldown: Math.random() * 60
+        });
+    }
+
+    function spawnHealthPack(x, y) {
+        healthPacks.push({ x, y, size: 20, life: 600 }); 
+    }
+
+    const screenShake = { intensity: 0, duration: 0 };
+    function createParticles(x, y, color, count, speed, size) {
+        for(let i=0;i<count;i++){particles.push({x,y,dx:Math.cos(Math.random()*Math.PI*2)*Math.random()*speed,dy:Math.sin(Math.random()*Math.PI*2)*Math.random()*speed,size:Math.random()*size+1,color,life:60});}
+    }
+    
+    const keys = {};
+    window.addEventListener('keydown', e => { 
+        keys[e.key.toLowerCase()] = true; 
+        if(gameState === 'GAME_OVER' && e.key === 'Enter') {
+            gameOverScreen.style.display = 'none';
+            characterSelection.innerHTML = ''; 
+            startScreen.style.display = 'block'; 
+            
+            // Réafficher les boutons UI au retour au menu
+            infoBtn.style.display = 'flex';
+            discordLink.style.display = 'flex';
+            
+            gameState = 'START_SCREEN';
+        }
+    });
+    window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+    
+    const mouse = { x: canvas.width/2, y: canvas.height/2, down: false };
+    canvas.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+    canvas.addEventListener('mousedown', e => { if (e.button === 0) mouse.down = true; });
+    canvas.addEventListener('mouseup', e => { if (e.button === 0) mouse.down = false; });
+    window.addEventListener('contextmenu', e => e.preventDefault());
+
+    function shoot() {
+        if (player.shootCooldown > 0) return;
+        playSound('shoot');
+        const angle = Math.atan2(mouse.y - canvas.height/2, mouse.x - canvas.width/2);
+        bullets.push({ x: player.x, y: player.y, dx: Math.cos(angle)*10, dy: Math.sin(angle)*10, size: 5, color: player.color });
+        player.shootCooldown = 10;
+    }
+    
+    function update() {
+        if (gameState !== 'PLAYING' && gameState !== 'WAVE_TRANSITION') return;
+
+        let dx=0, dy=0;
+        if(keys['z']||keys['w'])dy-=1; if(keys['s'])dy+=1; if(keys['q']||keys['a'])dx-=1; if(keys['d'])dx+=1;
+        if(dx!==0||dy!==0){const a=Math.atan2(dy,dx);player.x+=Math.cos(a)*player.speed;player.y+=Math.sin(a)*player.speed;}
+        
+        particles.forEach(p=>{p.x+=p.dx;p.y+=p.dy;p.life--;p.dx*=0.98;p.dy*=0.98;});
+        particles = particles.filter(p=>p.life>0);
+        
+        healthPacks.forEach(hp => {
+            hp.life--;
+            if (Math.hypot(hp.x - player.x, hp.y - player.y) < player.size + hp.size) {
+                player.hp = Math.min(player.maxHp, player.hp + 5);
+                hp.life = 0;
+                playSound('powerup');
+                createParticles(player.x, player.y, 'lime', 15, 2, 3);
+            }
+        });
+        healthPacks = healthPacks.filter(hp => hp.life > 0);
+
+        if (gameState === 'WAVE_TRANSITION') {
+            wave.timer--;
+            if (wave.timer <= 0) {
+                startNextWave();
+            }
+            return;
+        }
+
+        if(player.shootCooldown>0) player.shootCooldown--;
+        if(mouse.down) shoot();
+
+        bullets = bullets.filter(b => {
+            b.x += b.dx; b.y += b.dy; let hit=false;
+            bots.forEach(bot => { if(Math.hypot(b.x-bot.x, b.y-bot.y)<bot.size){hit=true; bot.hp-=10; createParticles(b.x,b.y,bot.color,10,3,3);playSound('hit');}});
+            return !hit && Math.hypot(b.x - player.x, b.y - player.y) < 2000;
+        });
+
+        bots = bots.filter(bot => {
+            if (bot.hp <= 0) {
+                createParticles(bot.x, bot.y, 'orange', 40, 5, 4); playSound('explosion');
+                score += 100 * wave.number;
+                if (Math.random() < 0.15) {
+                    spawnHealthPack(bot.x, bot.y);
+                }
+                return false;
+            }
+            const angle=Math.atan2(player.y-bot.y,player.x-bot.x); bot.x+=Math.cos(angle)*bot.speed; bot.y+=Math.sin(angle)*bot.speed;
+            if(bot.cooldown>0)bot.cooldown--; else if(Math.hypot(player.x-bot.x,player.y-bot.y)<600){const a=Math.atan2(player.y-bot.y,player.x-bot.x);botBullets.push({x:bot.x,y:bot.y,dx:Math.cos(a)*5,dy:Math.sin(a)*5,size:6,color:'#FF69B4'});bot.cooldown=Math.max(30, 120 - wave.number * 5);}
+            return true;
+        });
+        
+        botBullets = botBullets.filter(b => {
+            b.x+=b.dx;b.y+=b.dy; if(Math.hypot(b.x-player.x,b.y-player.y)<player.size){player.hp-=10;screenShake.intensity=10;screenShake.duration=20;player.damageTaken=1;playSound('playerHit');return false;}
+            return Math.hypot(b.x - player.x, b.y - player.y) < 2000;
+        });
+
+        if (player.hp <= 0) {
+            gameState = 'GAME_OVER';
+            finalScoreEl.textContent = score;
+            gameOverScreen.style.display = 'block';
+        }
+        
+        if (bots.length === 0 && gameState === 'PLAYING') {
+            gameState = 'WAVE_TRANSITION';
+            wave.timer = 20 * 60;
+            wave.announcement = "VAGUE TERMINÉE !";
+            wave.announcementLife = 120;
+            score += 500 * wave.number;
+        }
+    }
+
+    function draw() {
+        ctx.save();
+        ctx.fillStyle='#0d0d1a'; ctx.fillRect(0,0,canvas.width,canvas.height);
+        
+        if(screenShake.duration>0){screenShake.duration--;const sx=(Math.random()-0.5)*screenShake.intensity;const sy=(Math.random()-0.5)*screenShake.intensity;ctx.translate(sx,sy);}
+
+        const camX = -player.x + canvas.width/2; const camY = -player.y + canvas.height/2;
+        ctx.translate(camX, camY);
+
+        const gridSize=50; const startX=Math.floor((-camX)/gridSize)*gridSize; const startY=Math.floor((-camY)/gridSize)*gridSize; ctx.strokeStyle='rgba(255, 255, 255, 0.05)'; ctx.lineWidth=1;
+        for(let x=startX;x<startX+canvas.width+gridSize;x+=gridSize){ctx.beginPath();ctx.moveTo(x,startY);ctx.lineTo(x,startY+canvas.height+gridSize);ctx.stroke();}
+        for(let y=startY;y<startY+canvas.height+gridSize;y+=gridSize){ctx.beginPath();ctx.moveTo(startX,y);ctx.lineTo(startX+canvas.width+gridSize,y);ctx.stroke();}
+
+        healthPacks.forEach(hp => {
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(hp.x, hp.y, hp.size / 2, 0, Math.PI * 2); 
+            ctx.fill();
+            ctx.fillStyle = 'lime'; 
+            ctx.fillRect(hp.x - 2, hp.y - hp.size / 4, 4, hp.size / 2); 
+            ctx.fillRect(hp.x - hp.size / 4, hp.y - 2, hp.size / 2, 4); 
+        });
+
+        bots.forEach(bot => {
+            ctx.fillStyle=bot.color; ctx.beginPath(); ctx.arc(bot.x,bot.y,bot.size,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle='red'; ctx.fillRect(bot.x-bot.size,bot.y-bot.size-10,bot.size*2,5);
+            ctx.fillStyle='green'; ctx.fillRect(bot.x-bot.size,bot.y-bot.size-10,(bot.hp/bot.maxHp)*bot.size*2,5);
+        });
+
+        if (player.image && player.image.complete && player.image.naturalWidth !== 0) {
+            ctx.drawImage(player.image, player.x - player.size, player.y - player.size, player.size * 2, player.size * 2);
+        } else {
+            ctx.fillStyle = player.color; 
+            ctx.beginPath(); 
+            ctx.arc(player.x, player.y, player.size, 0, Math.PI*2); 
+            ctx.fill();
+        }
+        
+        ctx.fillStyle = 'white'; ctx.font = '14px Arial'; ctx.textAlign = 'center';
+        ctx.fillText(player.name, player.x, player.y - player.size - 10);
+        
+        ctx.globalCompositeOperation='lighter';
+        bullets.forEach(b=>{ctx.fillStyle=b.color;ctx.beginPath();ctx.arc(b.x,b.y,b.size*1.5,0,Math.PI*2);ctx.fill();ctx.lineWidth=2;ctx.strokeStyle=b.color;ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(b.x-b.dx,b.y-b.dy);ctx.stroke();});
+        botBullets.forEach(b=>{ctx.fillStyle=b.color;ctx.beginPath();ctx.arc(b.x,b.y,b.size,0,Math.PI*2);ctx.fill();});
+        particles.forEach(p=>{ctx.globalAlpha=p.life/60;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();});
+        ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over';
+        
+        ctx.restore();
+
+        ctx.strokeStyle='rgba(255,255,255,0.7)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(mouse.x-10,mouse.y);ctx.lineTo(mouse.x+10,mouse.y);ctx.moveTo(mouse.x,mouse.y-10);ctx.lineTo(mouse.x,mouse.y+10);ctx.stroke();
+        if(player.shootCooldown>5){ctx.fillStyle=`rgba(${hexToRgb(player.color).r}, ${hexToRgb(player.color).g}, ${hexToRgb(player.color).b}, 0.5)`;ctx.beginPath();ctx.arc(canvas.width/2,canvas.height/2,30,0,Math.PI*2);ctx.fill();}
+
+        ctx.fillStyle='#333';ctx.fillRect(20,canvas.height-40,200,20);
+        const hpRatio=player.hp/player.maxHp; ctx.fillStyle=hpRatio<0.2?'red':hpRatio<0.5?'orange':'#4CAF50';
+        ctx.fillRect(20,canvas.height-40,200*hpRatio,20);
+        ctx.strokeStyle='white';ctx.strokeRect(20,canvas.height-40,200,20);
+        ctx.fillStyle='white';ctx.font='16px Arial';ctx.textAlign = 'left'; ctx.fillText(`${player.hp}/${player.maxHp}`,90,canvas.height-23);
+
+        ctx.font='24px Arial';ctx.textAlign='right';
+        ctx.fillText(`Score: ${score}`,canvas.width-20,40);
+        ctx.fillText(`Vague: ${wave.number}`,canvas.width-20,70);
+
+        if(player.damageTaken>0){player.damageTaken-=0.05;ctx.fillStyle=`rgba(255,0,0,${player.damageTaken})`;ctx.fillRect(0,0,canvas.width,canvas.height);}
+    
+        if (wave.announcementLife > 0) {
+            wave.announcementLife--;
+            ctx.font = 'bold 72px Arial';
+            ctx.textAlign = 'center';
+            const alpha = Math.min(1, wave.announcementLife / 60);
+            ctx.fillStyle = `rgba(255, 255, 0, ${alpha})`;
+            ctx.fillText(wave.announcement, canvas.width/2, canvas.height/2 - 50);
+        }
+        
+        if (gameState === 'WAVE_TRANSITION' && wave.timer > 0) {
+            ctx.font = '48px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = 'white';
+            const secondsLeft = Math.ceil(wave.timer / 60);
+            ctx.fillText(`Prochaine vague dans : ${secondsLeft}`, canvas.width/2, canvas.height/2 + 20);
+        }
+    }
+
+    function hexToRgb(hex) {
+        if (!hex) return {r:255, g:255, b:255}; 
+        const bigint = parseInt(hex.slice(1), 16);
+        const r = (bigint >> 16) & 255;
+        const g = (bigint >> 8) & 255;
+        const b = bigint & 255;
+        return { r, g, b };
+    }
+
+    function loop() {
+        if(gameState === 'START_SCREEN' && document.getElementById('startScreen').style.display === 'none') {
+        } else if (gameState !== 'START_SCREEN' && gameState !== 'GAME_OVER') {
+            update();
+            draw();
+        }
+        requestAnimationFrame(loop);
+    }
+    
+    startScreen.style.display = 'none';
+    canvas.style.display = 'none';
+    gameOverScreen.style.display = 'none';
+    // Masquer les boutons au démarrage du script, ils apparaitront avec setupStartScreen()
+    infoBtn.style.display = 'none';
+    discordLink.style.display = 'none';
+
+    loop();
+    
+    if (totalAssets === 0) {
+        setupStartScreen();
+    }
+    
+  </script>
+</body>
+</html>
